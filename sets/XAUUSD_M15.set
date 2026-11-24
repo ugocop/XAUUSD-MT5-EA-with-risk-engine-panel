@@ -1,0 +1,56 @@
+; XAUUSD_RiskEA default inputs - XAUUSD M15
+; Load in Strategy Tester (Inputs tab > right click > Load) or on the chart (Inputs > Load).
+; ===== Execution =====
+InpMagic=20261125
+InpTradeComment=XAU_RISK_EA
+InpSlippagePoints=30
+InpAllowBuy=true
+InpAllowSell=true
+; ===== Strategy =====
+InpH1FastEMA=50
+InpH1SlowEMA=200
+InpM15EntryEMA=21
+InpATRPeriod=14
+InpSLATRMult=1.5
+InpRiskReward=2.0
+InpMaxExtensionATR=0.5
+; ===== Risk =====
+InpRiskPercent=0.5
+InpMaxLot=0.0
+InpDailyLossMode=0
+InpDailyLossPercent=2.0
+InpDailyLossMoney=0.0
+InpMaxDrawdownPercent=6.0
+InpMaxTradesPerDay=4
+InpMaxSpreadPoints=50
+InpBE_R=1.0
+InpBEBufferPoints=20
+InpTrailStartR=1.0
+InpTrailATRMult=1.0
+InpClearRiskLocks=false
+; ===== Session =====
+InpServerGmtOffset=2
+InpUseLondon=true
+InpUseNewYork=true
+InpLondonStartHour=7
+InpLondonStartMin=0
+InpLondonEndHour=16
+InpLondonEndMin=0
+InpNYStartHour=12
+InpNYStartMin=0
+InpNYEndHour=21
+InpNYEndMin=0
+InpFridayNoNewHour=16
+InpFridayNoNewMin=0
+InpFridayCloseAll=true
+InpFridayCloseHour=16
+InpFridayCloseMin=30
+; ===== Panel =====
+InpShowPanel=true
+InpPanelCorner=0
+InpPanelX=12
+InpPanelY=24
+InpPanelFontSize=9
+InpTimerSec=1
+; ===== Logging =====
+InpLogLevel=1
