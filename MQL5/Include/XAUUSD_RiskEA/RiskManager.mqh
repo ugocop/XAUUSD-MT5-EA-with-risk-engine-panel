@@ -64,6 +64,7 @@ private:
       GVSet("SOD_EQ", m_sod_equity);
       GVSet("SOD_DATE", (double)m_sod_date);
       GVSet("DAILY_BLOCK", m_daily_block ? 1.0 : 0.0);
+      GlobalVariablesFlush();
      }
 
    bool              IsOurDeal(const ulong ticket) const
@@ -125,6 +126,7 @@ private:
       GVDel("DAILY_BLOCK");
       GVDel("DD_BLOCK");
       GVDel("HWM");
+      GlobalVariablesFlush();
      }
 
 public:
@@ -240,6 +242,7 @@ public:
          m_dd_block      = true;
          m_state_changed = true;
          GVSet("DD_BLOCK", 1.0);
+         GlobalVariablesFlush();
          LogInfo(StringFormat("MAX DD LOCK: DD %.2f%% >= %.2f%% (HWM %.2f, equity %.2f). Closing all, no new trades.",
                               m_dd_pct, m_max_dd_pct, m_hwm, eq));
         }
@@ -250,6 +253,7 @@ public:
          m_daily_block   = true;
          m_state_changed = true;
          GVSet("DAILY_BLOCK", 1.0);
+         GlobalVariablesFlush();
          LogInfo(StringFormat("DAILY LOSS LOCK: daily P/L %.2f <= -%.2f (SOD equity %.2f). Closing all, blocked until next server date.",
                               m_daily_pnl, limit, m_sod_equity));
         }
@@ -421,6 +425,7 @@ public:
      {
       m_paused = paused;
       GVSet("PAUSED", paused ? 1.0 : 0.0);
+      GlobalVariablesFlush();
       m_state_changed = true;
      }
 

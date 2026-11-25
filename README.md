@@ -44,7 +44,7 @@ Set `InpServerGmtOffset` to your broker's offset, where server time = GMT + offs
 
 ### Start-of-day equity and persisted state
 
-The daily loss limit is measured against start-of-day (SOD) equity. On the first tick of a new server date, the EA saves the current equity as SOD equity. SOD equity, the SOD date, the daily-loss and max-DD locks, the equity high-water mark and the user pause flag are all kept in terminal Global Variables prefixed `XAU_RISK_EA_`. Restarting the terminal or re-attaching the EA on the same day therefore does not reset the day.
+The daily loss limit is measured against start-of-day (SOD) equity. On the first tick of a new server date, the EA saves the current equity as SOD equity. SOD equity, the SOD date, the daily-loss and max-DD locks, the equity high-water mark and the user pause flag are all kept in terminal Global Variables prefixed `XAU_RISK_EA_`. Restarting the terminal or re-attaching the EA on the same day therefore does not reset the day. These values are written to disk whenever they change, so they survive a terminal crash as well as a normal restart.
 
 If the EA is first attached mid-day and no record exists for today, SOD equity is set to the current equity at attach time.
 
@@ -113,7 +113,7 @@ Forced acceptance checks. They ran on short real-tick windows from 2025–2026, 
 
 | Check | Result |
 | --- | --- |
-| Compile | 0 errors, 0 warnings (MetaEditor build 6230) |
+| Compile | 0 errors, 0 warnings (MetaEditor build 6230, and again after the MT5 update to the current build) |
 | Daily loss 0.2% | Lock at daily P/L -20.10 vs limit -20.00. Position closed, the day's remaining signals skipped as `blocked (Daily loss)`, lock cleared at the next server date |
 | Max DD 0.5% | Lock at 0.51%. Close all, 0 entries for the remaining 6 weeks of the test, across new days |
 | Max trades = 1 | Never more than 1 entry per day; 80 signals skipped as `max trades` |
@@ -124,6 +124,9 @@ Forced acceptance checks. They ran on short real-tick windows from 2025–2026, 
 | No martingale | Every entry is a fresh risk-% size from current equity and SL distance, including after losses |
 | No repaint | Two identical runs produced identical entries (same bars, direction, price, lots) |
 | Daily trading break | SL modify, close and entry are skipped while the broker trade session is closed. 2.8-year run: 0 errors |
+| Max-DD lock survives restarts (live demo chart) | With the lock flag set, the EA starts as blocked and logs `Max-DD lock is active from a previous session`. It stays blocked after the terminal is force-killed and restarted, and today's start-of-day equity is restored |
+| Clear locks on re-attach (live demo chart) | Re-attaching with `InpClearRiskLocks = true` logs `Risk locks cleared` and the EA starts unblocked |
+| Buttons (visual tester) | Pause: `Pause clicked by user`, the next signal is skipped as `paused by user`, and the open position is still managed by the ATR trail. Close All: the open sell is closed and the panel shows `FLAT`. The visual tester has no chart click events, so the EA reads the button state on its timer and a click takes effect a moment later |
 
 ## Screenshots
 
@@ -135,13 +138,25 @@ Daily-loss lock with `InpDailyLossPercent = 0.2`. The buy was closed when daily 
 
 ![Panel BLOCKED: Daily loss](docs/screenshots/04b_panel_blocked_daily_loss.png)
 
-Open sell on the chart with its SL and entry lines. The panel shows the position and its floating P/L during the London+NY overlap. The journal shows the `Sizing:`, `SELL signal:` and `lots=0.02 risk%=0.50` lines:
+Open sell on the chart with its entry and TP lines. The panel shows the position and its floating P/L in the London session. The journal shows the `Sizing:`, `SELL signal:` and `lots=0.04 risk%=0.50` lines:
 
 ![Sell example](docs/screenshots/03b_sell_example_sl_tp.png)
 
 A full trade in the journal: sell entry, break-even at 1 R, ATR trail, take profit:
 
 ![Journal](docs/screenshots/05_journal_sell_be_trail_tp.png)
+
+Pause button clicked: the panel shows `PAUSED`, the button changes to `Resume`, and the open sell is kept:
+
+![Paused, position kept](docs/screenshots/07a_button_pause_position_kept.png)
+
+While paused, the 19:15 sell signal is skipped as `paused by user` and the ATR trail keeps managing the open trade. After Close All, the panel shows `FLAT`:
+
+![Pause skips signals, Close All flattens](docs/screenshots/07b_button_pause_skips_signal.png)
+
+Compile in MetaEditor:
+
+![MetaEditor 0 errors 0 warnings](docs/screenshots/06_metaeditor_compile_0_errors_0_warnings.png)
 
 ## Disclaimer
 
