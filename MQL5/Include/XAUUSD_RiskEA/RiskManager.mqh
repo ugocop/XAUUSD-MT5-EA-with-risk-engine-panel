@@ -37,6 +37,7 @@ private:
    bool              m_daily_block;
    bool              m_dd_block;
    bool              m_paused;
+   datetime          m_friday_lock_gmt;
 
    //--- computed state
    double            m_closed_pnl;
@@ -48,6 +49,8 @@ private:
    bool              m_history_dirty;
    bool              m_state_changed;
    string            m_note;
+   ulong             m_comm_pid[];
+   double            m_comm_val[];
 
    double            GVGet(const string key, const double def) const
      {
@@ -64,7 +67,7 @@ private:
       GVSet("SOD_EQ", m_sod_equity);
       GVSet("SOD_DATE", (double)m_sod_date);
       GVSet("DAILY_BLOCK", m_daily_block ? 1.0 : 0.0);
-      GlobalVariablesFlush();
+      FlushGlobalVariables();
      }
 
    bool              IsOurDeal(const ulong ticket) const
@@ -102,6 +105,43 @@ private:
       m_history_dirty = false;
      }
 
+   //--- commission still due when the position closes, estimated from its entry deals;
+   //--- entry commission itself is already in today's deals when the position opened today
+   double            CloseCommissionEstimate(const ulong position_id)
+     {
+      int cached = ArraySize(m_comm_pid);
+      for(int i = 0; i < cached; i++)
+         if(m_comm_pid[i] == position_id)
+            return m_comm_val[i];
+
+      double commission = 0.0;
+      bool   found      = false;
+      if(HistorySelectByPosition(position_id))
+        {
+         for(int d = HistoryDealsTotal() - 1; d >= 0; d--)
+           {
+            ulong deal = HistoryDealGetTicket(d);
+            if(deal == 0 || (ENUM_DEAL_ENTRY)HistoryDealGetInteger(deal, DEAL_ENTRY) != DEAL_ENTRY_IN)
+               continue;
+            commission += HistoryDealGetDouble(deal, DEAL_COMMISSION);
+            found = true;
+           }
+        }
+      if(!found)
+         return 0.0;
+      if(cached >= 64)
+        {
+         ArrayResize(m_comm_pid, 0);
+         ArrayResize(m_comm_val, 0);
+         cached = 0;
+        }
+      ArrayResize(m_comm_pid, cached + 1);
+      ArrayResize(m_comm_val, cached + 1);
+      m_comm_pid[cached] = position_id;
+      m_comm_val[cached] = commission;
+      return commission;
+     }
+
    void              RecalcFloating(void)
      {
       double fl = 0.0;
@@ -113,7 +153,9 @@ private:
             continue;
          if(PositionGetString(POSITION_SYMBOL) != _Symbol || (ulong)PositionGetInteger(POSITION_MAGIC) != m_magic)
             continue;
-         fl += PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
+         double profit = PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
+         ulong  pid    = (ulong)PositionGetInteger(POSITION_IDENTIFIER);
+         fl += profit + CloseCommissionEstimate(pid);
          n++;
         }
       m_floating   = fl;
@@ -126,14 +168,14 @@ private:
       GVDel("DAILY_BLOCK");
       GVDel("DD_BLOCK");
       GVDel("HWM");
-      GlobalVariablesFlush();
+      FlushGlobalVariables();
      }
 
 public:
                      CRiskManager(void) : m_magic(0), m_risk_pct(0.5), m_max_lot(0.0), m_dl_mode(DAILY_LOSS_PERCENT),
                      m_dl_pct(2.0), m_dl_money(0.0), m_max_dd_pct(6.0), m_max_trades(4), m_max_spread(50),
                      m_session(NULL), m_gv(""), m_sod_equity(0.0), m_sod_date(0), m_hwm(0.0),
-                     m_daily_block(false), m_dd_block(false), m_paused(false),
+                     m_daily_block(false), m_dd_block(false), m_paused(false), m_friday_lock_gmt(0),
                      m_closed_pnl(0.0), m_floating(0.0), m_daily_pnl(0.0), m_dd_pct(0.0),
                      m_trades_today(0), m_open_count(0), m_history_dirty(true), m_state_changed(true), m_note("") {}
 
@@ -164,6 +206,7 @@ public:
         {
          m_hwm = eq;
          GVSet("HWM", m_hwm);
+         FlushGlobalVariables();
         }
       m_dd_block = (GVGet("DD_BLOCK", 0.0) > 0.5);
 
@@ -190,6 +233,9 @@ public:
          LogInfo("User pause restored from previous session");
       if(m_dd_block)
          LogInfo("Max-DD lock is active from a previous session (clears only with InpClearRiskLocks=true on init)");
+      m_friday_lock_gmt = (datetime)(long)GVGet("FRIDAY_LOCK", 0.0);
+      if(m_friday_lock_gmt > 0)
+         LogInfo("Friday-close lock restored (set " + TimeToString(m_friday_lock_gmt) + " GMT); clears in the next trading week once flat");
 
       m_history_dirty = true;
       m_state_changed = true;
@@ -228,11 +274,34 @@ public:
         {
          m_hwm = eq;
          GVSet("HWM", m_hwm);
+         FlushGlobalVariables();
         }
 
       if(m_history_dirty)
          RecalcHistory();
       RecalcFloating();
+
+      if(m_session != NULL)
+        {
+         datetime gmt = m_session.GmtNow();
+         if(m_friday_lock_gmt == 0 && m_session.ShouldFridayCloseAll())
+           {
+            m_friday_lock_gmt = gmt;
+            m_state_changed   = true;
+            GVSet("FRIDAY_LOCK", (double)(long)gmt);
+            FlushGlobalVariables();
+            LogInfo("FRIDAY CLOSE LOCK: closing all EA positions, no new trades until the next trading week");
+           }
+         else
+            if(m_friday_lock_gmt > 0 && m_open_count == 0 && gmt >= m_session.NextWeekStartGmt(m_friday_lock_gmt))
+              {
+               m_friday_lock_gmt = 0;
+               m_state_changed   = true;
+               GVDel("FRIDAY_LOCK");
+               FlushGlobalVariables();
+               LogInfo("Friday-close lock cleared: new trading week and no open positions");
+              }
+        }
 
       m_daily_pnl = m_closed_pnl + m_floating;
       m_dd_pct    = (m_hwm > 0.0) ? (m_hwm - eq) / m_hwm * 100.0 : 0.0;
@@ -242,7 +311,7 @@ public:
          m_dd_block      = true;
          m_state_changed = true;
          GVSet("DD_BLOCK", 1.0);
-         GlobalVariablesFlush();
+         FlushGlobalVariables();
          LogInfo(StringFormat("MAX DD LOCK: DD %.2f%% >= %.2f%% (HWM %.2f, equity %.2f). Closing all, no new trades.",
                               m_dd_pct, m_max_dd_pct, m_hwm, eq));
         }
@@ -253,7 +322,7 @@ public:
          m_daily_block   = true;
          m_state_changed = true;
          GVSet("DAILY_BLOCK", 1.0);
-         GlobalVariablesFlush();
+         FlushGlobalVariables();
          LogInfo(StringFormat("DAILY LOSS LOCK: daily P/L %.2f <= -%.2f (SOD equity %.2f). Closing all, blocked until next server date.",
                               m_daily_pnl, limit, m_sod_equity));
         }
@@ -340,7 +409,7 @@ public:
          reason = "Daily loss";
          return true;
         }
-      if(m_session != NULL && m_session.ShouldFridayCloseAll())
+      if(m_friday_lock_gmt > 0 || (m_session != NULL && m_session.ShouldFridayCloseAll()))
         {
          reason = "Friday close";
          return true;
@@ -425,7 +494,7 @@ public:
      {
       m_paused = paused;
       GVSet("PAUSED", paused ? 1.0 : 0.0);
-      GlobalVariablesFlush();
+      FlushGlobalVariables();
       m_state_changed = true;
      }
 

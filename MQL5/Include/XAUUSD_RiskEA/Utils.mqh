@@ -23,6 +23,13 @@ void LogError(const string msg) { LogWrite("ERR", msg); }
 void LogInfo(const string msg)  { if(g_log_level >= LOG_INFO)  LogWrite("INFO", msg); }
 void LogDebug(const string msg) { if(g_log_level >= LOG_DEBUG) LogWrite("DEBUG", msg); }
 
+//--- the Strategy Tester keeps global variables in memory only, so writing them to disk there only slows the run
+void FlushGlobalVariables()
+  {
+   if(MQLInfoInteger(MQL_TESTER) == 0)
+      GlobalVariablesFlush();
+  }
+
 //--- server time shifted back to GMT (server = GMT + offset)
 datetime GmtTime(const int server_gmt_offset)
   {

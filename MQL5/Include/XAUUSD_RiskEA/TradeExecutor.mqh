@@ -306,7 +306,7 @@ public:
                               FmtPrice(atr_sl_dist), FmtPrice(sl_dist)));
         }
       sl_dist = CeilToTick(sl_dist);
-      double tp_dist = CeilToTick(atr_sl_dist * m_rr);
+      double tp_dist = CeilToTick(sl_dist * m_rr);
       if(tp_dist < min_dist)
         {
          LogInfo(StringFormat("%s signal skipped: TP distance %s below broker minimum %s", side, FmtPrice(tp_dist), FmtPrice(min_dist)));

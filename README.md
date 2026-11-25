@@ -13,7 +13,7 @@ A single-symbol Expert Advisor for MetaTrader 5 that trades XAUUSD on M15. It us
   - **Max drawdown** from the equity high-water mark: closes all positions and blocks new trades. The lock survives new days and Resume.
   - Max entries per day and a max-spread filter.
 - **Session filter**: London (07:00–16:00 GMT) and New York (12:00–21:00 GMT) windows. GMT is derived from server time with a configurable server GMT offset.
-- **Friday rules**: no new entries from 16:00 GMT, close all at 16:30 GMT, blocked until Monday.
+- **Friday rules**: no new entries from 16:00 GMT. At 16:30 GMT a saved Friday-close lock closes all EA positions and keeps retrying while any are still open. It clears only once the EA is flat and the next trading week has started (Monday 00:00 GMT), so it survives a restart over the weekend.
 - **Break-even and ATR trailing**: break-even at 1 R plus a buffer, then an ATR trail based on the last closed bar. The stop only ever tightens.
 - **Multi-timeframe**: H1 trend filter, M15 entry.
 - **No martingale, no grid**: one position per direction, risk-sized lots only, no add-ons, no recovery multiplier. The executor refuses any order whose volume differs from a fresh risk-% calculation, and every entry logs `lots=X risk%=Y`.
@@ -44,7 +44,9 @@ Set `InpServerGmtOffset` to your broker's offset, where server time = GMT + offs
 
 ### Start-of-day equity and persisted state
 
-The daily loss limit is measured against start-of-day (SOD) equity. On the first tick of a new server date, the EA saves the current equity as SOD equity. SOD equity, the SOD date, the daily-loss and max-DD locks, the equity high-water mark and the user pause flag are all kept in terminal Global Variables prefixed `XAU_RISK_EA_`. Restarting the terminal or re-attaching the EA on the same day therefore does not reset the day. These values are written to disk whenever they change, so they survive a terminal crash as well as a normal restart.
+The daily loss limit is measured against start-of-day (SOD) equity. On the first tick of a new server date, the EA saves the current equity as SOD equity. SOD equity, the SOD date, the daily-loss, max-DD and Friday-close locks, the equity high-water mark and the user pause flag are all kept in terminal Global Variables prefixed `XAU_RISK_EA_`. Restarting the terminal or re-attaching the EA on the same day therefore does not reset the day. These values are written to disk whenever they change, so they survive a terminal crash as well as a normal restart. The Strategy Tester keeps global variables in memory only, so the EA skips the disk write there.
+
+Daily P/L is today's closed deals (profit, swap, commission and fees) plus the floating P/L of open EA positions. The floating part includes swap and an estimate of the commission still due when each position closes, based on its entry-deal commission. Entry commission of positions opened today is already counted in today's deals.
 
 If the EA is first attached mid-day and no record exists for today, SOD equity is set to the current equity at attach time.
 
@@ -100,10 +102,10 @@ All runs: MetaTrader 5 build 6230, MetaQuotes-Demo data, XAUUSD M15, *Every tick
 
 | Run | Inputs | Net profit | Max equity DD | Profit factor | Trades | Report |
 | --- | --- | --- | --- | --- | --- | --- |
-| Main | `sets/XAUUSD_M15.set` (6% max-DD lock) | +1,051.10 (+10.5%) | 5.99% | 1.16 | 300 | [htm](docs/reports/tester_default_2025-06_2026-11.htm) |
-| Comparison | same, but `InpMaxDrawdownPercent = 50` (lock effectively off) | -539.47 (-5.4%) | 20.74% | 0.96 | 636 | [htm](docs/reports/tester_dd_lock_off_2025-06_2026-11.htm) |
+| Main | `sets/XAUUSD_M15.set` (6% max-DD lock) | +1,051.85 (+10.5%) | 5.99% | 1.16 | 300 | [htm](docs/reports/tester_default_2025-06_2026-11.htm) |
+| Comparison | same, but `InpMaxDrawdownPercent = 50` (lock effectively off) | -538.46 (-5.4%) | 20.73% | 0.96 | 636 | [htm](docs/reports/tester_dd_lock_off_2025-06_2026-11.htm) |
 
-What the comparison shows: on its own, the entry logic is roughly break-even on this period. In the main run, the max-DD lock fired on 2026.02.05 at 6.02% below the equity peak (peak 11,758, equity 11,051). It closed the position and blocked all new trades for the rest of the test. Without the lock, the same signals went on to a 20.7% drawdown. The risk engine, not the entry, decided the outcome, and that is what this project demonstrates. It is not a claim that the strategy is profitable.
+What the comparison shows: on its own, the entry logic is roughly break-even on this period. In the main run, the max-DD lock fired on 2026.02.05 at 6.01% below the equity peak (peak 11,759, equity 11,052). It closed the position and blocked all new trades for the rest of the test. Without the lock, the same signals went on to a 20.7% drawdown. The risk engine, not the entry, decided the outcome, and that is what this project demonstrates. It is not a claim that the strategy is profitable.
 
 ![Main run balance](docs/screenshots/02_tester_graph_default.png)
 
@@ -119,7 +121,7 @@ Forced acceptance checks. They ran on short real-tick windows from 2025–2026, 
 | Max trades = 1 | Never more than 1 entry per day; 80 signals skipped as `max trades` |
 | Spread = 0 | 0 entries; every signal skipped as `spread`; no position closed |
 | Sessions off / London only | 0 entries with both off. With London only, entries between 09:00 and 17:45 server time, which is 07:00–15:45 GMT at offset +2 |
-| Friday | 0 entries after 16:00 GMT on Fridays; `Close all (Friday close)` at 16:30 GMT |
+| Friday | 0 entries after 16:00 GMT on Fridays. At 16:30 GMT a Friday-close lock is set and saved, and every EA position is closed. The lock cleared at 00:00 GMT each Monday once the EA was flat: 75 locks and 74 clears over 17 months (the test ends on a Sunday with the last lock still set) |
 | Sizing | 1,393 logged entries checked against the formula: 0 mismatches, never rounded up |
 | No martingale | Every entry is a fresh risk-% size from current equity and SL distance, including after losses |
 | No repaint | Two identical runs produced identical entries (same bars, direction, price, lots) |
@@ -145,6 +147,10 @@ Daily-loss lock with `InpDailyLossPercent = 0.2`. The buy was closed when daily 
 Open sell on the chart with its entry and TP lines. The panel shows the position and its floating P/L in the London session. The journal shows the `Sizing:`, `SELL signal:` and `lots=0.04 risk%=0.50` lines:
 
 ![Sell example](docs/screenshots/03b_sell_example_sl_tp.png)
+
+Open buy on the chart: entry line (`BUY 0.06 at 3353.67`), SL line (3346.12) and TP line (3368.77, the red dotted line level with the bottom of the panel; its label sits behind the panel). The panel shows the position during the New York session, and the journal shows the `Sizing:`, `BUY signal:` and `BUY opened` lines:
+
+![Buy example](docs/screenshots/03a_buy_example_sl_tp.png)
 
 A full trade in the journal: sell entry, break-even at 1 R, ATR trail, take profit:
 

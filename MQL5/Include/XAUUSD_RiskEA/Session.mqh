@@ -99,6 +99,18 @@ public:
       return (dow == 5 && minute >= m_fri_close);
      }
 
+   datetime          GmtNow(void) const { return GmtTime(m_offset); }
+
+   //--- Monday 00:00 GMT of the week after the one containing gmt (weeks run Monday-Sunday)
+   datetime          NextWeekStartGmt(const datetime gmt) const
+     {
+      MqlDateTime dt;
+      TimeToStruct(gmt, dt);
+      long days_since_monday = (dt.day_of_week + 6) % 7;
+      long day_start         = (long)gmt - (dt.hour * 3600 + dt.min * 60 + dt.sec);
+      return (datetime)(day_start + (7 - days_since_monday) * 86400);
+     }
+
    string            StateLabel(void) const
      {
       if(IsFridayNoNew())
