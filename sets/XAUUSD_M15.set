@@ -1,56 +1,57 @@
-; XAUUSD_RiskEA default inputs - XAUUSD M15
-; Load in Strategy Tester (Inputs tab > right click > Load) or on the chart (Inputs > Load).
-; ===== Execution =====
-InpMagic=20261125
+; saved automatically on 2026.11.25 06:01:26
+; this file contains last used input parameters for testing/optimizing XAUUSD_RiskEA expert advisor
+;
+; Execution
+InpMagic=20261125||20261125||1||202611250||N
 InpTradeComment=XAU_RISK_EA
-InpSlippagePoints=30
-InpAllowBuy=true
-InpAllowSell=true
-; ===== Strategy =====
-InpH1FastEMA=50
-InpH1SlowEMA=200
-InpM15EntryEMA=21
-InpATRPeriod=14
-InpSLATRMult=1.5
-InpRiskReward=2.0
-InpMaxExtensionATR=0.5
-; ===== Risk =====
-InpRiskPercent=0.5
-InpMaxLot=0.0
-InpDailyLossMode=0
-InpDailyLossPercent=2.0
-InpDailyLossMoney=0.0
-InpMaxDrawdownPercent=6.0
-InpMaxTradesPerDay=4
-InpMaxSpreadPoints=50
-InpBE_R=1.0
-InpBEBufferPoints=20
-InpTrailStartR=1.0
-InpTrailATRMult=1.0
-InpClearRiskLocks=false
-; ===== Session =====
-InpServerGmtOffset=2
-InpUseLondon=true
-InpUseNewYork=true
-InpLondonStartHour=7
-InpLondonStartMin=0
-InpLondonEndHour=16
-InpLondonEndMin=0
-InpNYStartHour=12
-InpNYStartMin=0
-InpNYEndHour=21
-InpNYEndMin=0
-InpFridayNoNewHour=16
-InpFridayNoNewMin=0
-InpFridayCloseAll=true
-InpFridayCloseHour=16
-InpFridayCloseMin=30
-; ===== Panel =====
-InpShowPanel=true
-InpPanelCorner=0
-InpPanelX=12
-InpPanelY=24
-InpPanelFontSize=9
-InpTimerSec=1
-; ===== Logging =====
-InpLogLevel=1
+InpSlippagePoints=30||30||1||300||N
+InpAllowBuy=true||false||0||true||N
+InpAllowSell=true||false||0||true||N
+; Strategy
+InpH1FastEMA=50||50||1||500||N
+InpH1SlowEMA=200||200||1||2000||N
+InpM15EntryEMA=21||21||1||210||N
+InpATRPeriod=14||14||1||140||N
+InpSLATRMult=1.5||1.5||0.150000||15.000000||N
+InpRiskReward=2.0||2.0||0.200000||20.000000||N
+InpMaxExtensionATR=0.5||0.5||0.050000||5.000000||N
+; Risk
+InpRiskPercent=0.5||0.5||0.050000||5.000000||N
+InpMaxLot=0.0||0.0||0.000000||0.000000||N
+InpDailyLossMode=0||0||0||1||N
+InpDailyLossPercent=2.0||2.0||0.200000||20.000000||N
+InpDailyLossMoney=0.0||0.0||0.000000||0.000000||N
+InpMaxDrawdownPercent=6.0||6.0||0.600000||60.000000||N
+InpMaxTradesPerDay=4||4||1||40||N
+InpMaxSpreadPoints=50||50||1||500||N
+InpBE_R=1.0||1.0||0.100000||10.000000||N
+InpBEBufferPoints=20||20||1||200||N
+InpTrailStartR=1.0||1.0||0.100000||10.000000||N
+InpTrailATRMult=1.0||1.0||0.100000||10.000000||N
+InpClearRiskLocks=false||false||0||true||N
+; Session
+InpServerGmtOffset=2||2||1||20||N
+InpUseLondon=true||false||0||true||N
+InpUseNewYork=true||false||0||true||N
+InpLondonStartHour=7||7||1||70||N
+InpLondonStartMin=0||0||1||10||N
+InpLondonEndHour=16||16||1||160||N
+InpLondonEndMin=0||0||1||10||N
+InpNYStartHour=12||12||1||120||N
+InpNYStartMin=0||0||1||10||N
+InpNYEndHour=21||21||1||210||N
+InpNYEndMin=0||0||1||10||N
+InpFridayNoNewHour=16||16||1||160||N
+InpFridayNoNewMin=0||0||1||10||N
+InpFridayCloseAll=true||false||0||true||N
+InpFridayCloseHour=16||16||1||160||N
+InpFridayCloseMin=30||30||1||300||N
+; Panel
+InpShowPanel=true||false||0||true||N
+InpPanelCorner=0||0||0||3||N
+InpPanelX=12||12||1||120||N
+InpPanelY=24||24||1||240||N
+InpPanelFontSize=9||9||1||90||N
+InpTimerSec=1||1||1||10||N
+; Logging
+InpLogLevel=1||0||0||2||N

@@ -130,6 +130,10 @@ Forced acceptance checks. They ran on short real-tick windows from 2025–2026, 
 
 ## Screenshots
 
+Strategy Tester inputs with the default groups (`sets/XAUUSD_M15.set`):
+
+![Inputs](docs/screenshots/01_inputs_dialog.png)
+
 Panel in the visual tester, `ACTIVE`, before the session opens:
 
 ![Panel ACTIVE](docs/screenshots/04a_panel_active.png)
