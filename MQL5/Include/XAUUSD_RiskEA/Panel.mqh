@@ -170,7 +170,8 @@ public:
       m_font_size    = MathMax(6, font_size);
       m_poll_buttons = (MQLInfoInteger(MQL_TESTER) != 0);
 
-      double scale = m_font_size / 9.0;
+      int    dpi   = TerminalInfoInteger(TERMINAL_SCREEN_DPI);
+      double scale = m_font_size / 9.0 * (dpi > 0 ? dpi / 96.0 : 1.0);
       m_line_h = (int)MathRound(18 * scale);
       m_pad    = (int)MathRound(8 * scale);
       m_btn_h  = (int)MathRound(22 * scale);

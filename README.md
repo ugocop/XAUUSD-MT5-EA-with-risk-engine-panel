@@ -94,7 +94,7 @@ lots = floor( equity * risk% / 100 / (SL_distance / tick_size * tick_value) / st
 
 ## Test results
 
-All runs: MetaTrader 5 build 6230, MetaQuotes-Demo data, XAUUSD M15, *Every tick based on real ticks*, 10,000 USD deposit, hedging, leverage 1:100.
+All runs: MetaTrader 5 build 6230, MetaQuotes-Demo data, XAUUSD M15, *Every tick based on real ticks*, 10,000 USD deposit, hedging, leverage 1:500. Sizing is risk-based, so leverage only affects the margin check.
 
 **Why 17 months instead of 2 years:** MetaQuotes-Demo only has real XAUUSD ticks from 2025.05.27. A 2024–2026 run on this server reports "50% real ticks", meaning the tester generated half the ticks, so it is not used as the deliverable. The deliverable runs use 2025.06.01 – 2026.11.01, which is 100% real ticks. On a broker with a longer real-tick history, rerun the same set file over 2+ years.
 
@@ -124,6 +124,24 @@ Forced acceptance checks. They ran on short real-tick windows from 2025–2026, 
 | No martingale | Every entry is a fresh risk-% size from current equity and SL distance, including after losses |
 | No repaint | Two identical runs produced identical entries (same bars, direction, price, lots) |
 | Daily trading break | SL modify, close and entry are skipped while the broker trade session is closed. 2.8-year run: 0 errors |
+
+## Screenshots
+
+Panel in the visual tester, `ACTIVE`, before the session opens:
+
+![Panel ACTIVE](docs/screenshots/04a_panel_active.png)
+
+Daily-loss lock with `InpDailyLossPercent = 0.2`. The buy was closed when daily P/L reached -20.05 against the -20.00 limit, and the panel shows `BLOCKED: Daily loss`. The journal shows the sizing line and the buy signal with its reasons:
+
+![Panel BLOCKED: Daily loss](docs/screenshots/04b_panel_blocked_daily_loss.png)
+
+Open sell on the chart with its SL and entry lines. The panel shows the position and its floating P/L during the London+NY overlap. The journal shows the `Sizing:`, `SELL signal:` and `lots=0.02 risk%=0.50` lines:
+
+![Sell example](docs/screenshots/03b_sell_example_sl_tp.png)
+
+A full trade in the journal: sell entry, break-even at 1 R, ATR trail, take profit:
+
+![Journal](docs/screenshots/05_journal_sell_be_trail_tp.png)
 
 ## Disclaimer
 
